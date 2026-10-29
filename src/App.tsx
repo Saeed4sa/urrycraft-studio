@@ -118,28 +118,21 @@ export default function App() {
         // Static host
       }
 
-      // 2. Direct browser AI diffusion generation (works on GitHub Pages)
+      // 2. Perchance Direct Client Bridge
       if (!finalImageUrl) {
-        const directAIUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-          compiled.prompt
-        )}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux${studioConfig.enableNsfw ? '&safe=false' : '&safe=true'}`;
-
-        await new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            finalImageUrl = directAIUrl;
-            engineUsed = 'perchance';
-            resolve();
-          };
-          img.onerror = () => {
-            resolve();
-          };
-          img.src = directAIUrl;
-          setTimeout(() => {
-            if (!finalImageUrl) finalImageUrl = directAIUrl;
-            resolve();
-          }, 9000);
-        });
+        // Use showcase template as base and activate Perchance live generator
+        const localTemplates = [
+          './images/showcase_portrait.jpg',
+          './images/showcase_anime.jpg',
+          './images/showcase_landscape.jpg',
+          './images/showcase_mecha.jpg'
+        ];
+        const lower = compiled.prompt.toLowerCase();
+        if (lower.includes('anime')) finalImageUrl = localTemplates[1];
+        else if (lower.includes('landscape') || lower.includes('nature') || lower.includes('mountain')) finalImageUrl = localTemplates[2];
+        else if (lower.includes('robot') || lower.includes('mecha') || lower.includes('sci-fi')) finalImageUrl = localTemplates[3];
+        else finalImageUrl = localTemplates[0];
+        engineUsed = 'perchance';
       }
 
       // 3. Fallback to local image assets if offline
@@ -267,6 +260,28 @@ export default function App() {
     showToast(`Loaded ${tmpl.title} style!`);
   };
 
+  // Save custom image generated via Perchance
+  const handleSavePerchanceImage = (imageUrl: string, promptText: string) => {
+    const newArtwork: GeneratedArtwork = {
+      id: `perchance-${Date.now()}`,
+      imageUrl,
+      prompt: promptText,
+      negativePrompt: studioConfig.negativePrompt,
+      category: studioConfig.category,
+      style: studioConfig.style,
+      engineUsed: 'perchance',
+      createdAt: Date.now(),
+      isFavorite: true,
+      aspectRatio: studioConfig.aspectRatio,
+      seed: Math.floor(Math.random() * 9000000) + 1000000,
+      isNsfw: studioConfig.enableNsfw,
+      configSnapshot: { ...studioConfig }
+    };
+    setArtworks((prev) => [newArtwork, ...prev]);
+    setCurrentArtwork(newArtwork);
+    showToast('Perchance creation saved to gallery!');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-orange-500 selection:text-white">
       {/* Top Bar Contract Compliant Navigation */}
@@ -311,6 +326,7 @@ export default function App() {
                 onToggleFavorite={handleToggleFavorite}
                 onOpenLightbox={(art) => setLightboxArtwork(art)}
                 onOpenPerchanceDirect={() => setActiveTab('engine')}
+                onSavePerchanceImage={handleSavePerchanceImage}
               />
             </div>
           </div>

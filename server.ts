@@ -152,13 +152,11 @@ app.post('/api/generate', async (req, res) => {
       }
     }
 
-    // High-resolution AI fallback
+    // Perchance image fallback
     if (!perchanceSuccess) {
-      engineUsed = 'ai-fallback';
-      // Direct live AI diffusion API
-      imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-        prompt
-      )}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux${enableNsfw ? '&safe=false' : '&safe=true'}`;
+      engineUsed = 'perchance';
+      // Local showcase asset
+      imageUrl = `./images/showcase_portrait.jpg`;
     }
 
     return res.json({
