@@ -12,7 +12,7 @@ export interface FurryCharacterConfig {
   artStyle: string;
   lighting: string;
   background: string;
-  aspectRatio: '1:1' | '3:4' | '4:3' | '16:9';
+  aspectRatio: '1:1' | '3:4' | '4:3' | '16:9' | '9:16';
   customNotes: string;
   negativePrompt: string;
 }
