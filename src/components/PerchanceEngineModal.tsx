@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, CheckCircle, RefreshCw, Cpu, ShieldCheck, Terminal, Sparkles } from 'lucide-react';
+import { ExternalLink, Cpu, ShieldCheck, Terminal, Sparkles, RefreshCw } from 'lucide-react';
 
 interface PerchanceEngineModalProps {
   currentPrompt: string;
@@ -9,7 +9,7 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
   const [iframeLoaded, setIframeLoaded] = useState<boolean>(false);
   const [activeView, setActiveView] = useState<'info' | 'live-embed'>('info');
 
-  const perchanceUrl = `https://perchance.org/ai-furry-generator`;
+  const perchanceUrl = `https://perchance.org/ai-photo-generator`;
 
   return (
     <div className="space-y-6">
@@ -22,10 +22,10 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
               <span>Perchance Bridge Architecture</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
-              Perchance AI Furry Generator Connection
+              Perchance AI Image Generator Connection
             </h1>
             <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-              FurryCraft Studio communicates directly with the Perchance generator ecosystem (<code className="text-orange-300 font-mono">perchance.org/ai-furry-generator</code>). Prompts formatted in the studio are dispatched to the generator pipeline with automatic image capture and fallback protection.
+              PixelStudio communicates directly with the Perchance generator ecosystem (<code className="text-orange-300 font-mono">perchance.org/ai-photo-generator</code> and image generation nodes). Prompts compiled in the studio are dispatched to the generator pipeline with automatic image capture and fallback protection.
             </p>
           </div>
 
@@ -76,9 +76,9 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
               <Terminal className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Prompt Ingestion & Bridge</h3>
+            <h3 className="text-sm font-bold text-white">Full Prompt Freedom</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Custom traits, species keywords, lighting conditions, and negative tokens compiled in the Character Studio are fed seamlessly into the generator engine parameters.
+              Accepts your own raw custom prompts or augments them with professional art styles, lighting, and camera lens tokens.
             </p>
           </div>
 
@@ -87,9 +87,9 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Resilient Failover Pipeline</h3>
+            <h3 className="text-sm font-bold text-white">NSFW Filter Controls</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              If Perchance image nodes experience Cloudflare verification pauses or server throttling, the app transparently shifts to our high-resolution AI synthesis pipeline to avoid broken image states.
+              Provides an instant toggle between strict Safe Search (filtering adult/explicit content) and Uncensored mode for unrestricted creative freedom.
             </p>
           </div>
 
@@ -98,9 +98,9 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Sparkles className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Gemini 3.8 Flash Prompt Enhancer</h3>
+            <h3 className="text-sm font-bold text-white">Universal Diffusion Support</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Includes an intelligent prompt enrichment route powered by Gemini 3.8 Flash to transform simple character ideas into highly detailed diffusion prompts optimized for furry artwork.
+              Generates photoreal portraits, anime, 3D renders, landscapes, oil paintings, and fantasy concepts with zero latency.
             </p>
           </div>
         </div>
@@ -108,7 +108,7 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
         /* Live Embedded Generator View */
         <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 space-y-4">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Target Frame: <code className="text-orange-300 font-mono">perchance.org/ai-furry-generator</code></span>
+            <span>Target Frame: <code className="text-orange-300 font-mono">perchance.org/ai-photo-generator</code></span>
             <span className="text-slate-500">Live Client Sandboxed Iframe</span>
           </div>
 
@@ -121,7 +121,7 @@ export const PerchanceEngineModal: React.FC<PerchanceEngineModalProps> = ({ curr
             )}
             <iframe
               src={perchanceUrl}
-              title="Perchance AI Furry Generator"
+              title="Perchance AI Photo Generator"
               className="w-full h-full border-0"
               onLoad={() => setIframeLoaded(true)}
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"

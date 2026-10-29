@@ -4,18 +4,18 @@ import {
   Heart,
   Maximize2,
   Wand2,
-  Download,
   Trash2,
   Image as ImageIcon,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
-import { GeneratedArtwork, FurryCharacterConfig } from '../types';
+import { GeneratedArtwork, ImageGenerationConfig } from '../types';
 
 interface GalleryViewProps {
   artworks: GeneratedArtwork[];
   onSelectArtwork: (artwork: GeneratedArtwork) => void;
-  onRemix: (config?: FurryCharacterConfig) => void;
+  onRemix: (config?: ImageGenerationConfig) => void;
   onToggleFavorite: (id: string) => void;
   onDeleteArtwork: (id: string) => void;
   onClearGallery: () => void;
@@ -35,19 +35,22 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<'all' | 'favorites'>('all');
-  const [speciesFilter, setSpeciesFilter] = useState<string>('all');
+  const [styleFilter, setStyleFilter] = useState<string>('all');
+  const [nsfwFilter, setNsfwFilter] = useState<'all' | 'safe' | 'nsfw'>('all');
 
-  const speciesList = Array.from(new Set(artworks.map(a => a.species))).filter(Boolean);
+  const styleList = Array.from(new Set(artworks.map(a => a.style))).filter(Boolean);
 
   const filteredArtworks = artworks.filter((item) => {
     if (filterType === 'favorites' && !item.isFavorite) return false;
-    if (speciesFilter !== 'all' && item.species !== speciesFilter) return false;
+    if (styleFilter !== 'all' && item.style !== styleFilter) return false;
+    if (nsfwFilter === 'safe' && item.isNsfw) return false;
+    if (nsfwFilter === 'nsfw' && !item.isNsfw) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         item.prompt.toLowerCase().includes(q) ||
-        item.species.toLowerCase().includes(q) ||
-        item.style.toLowerCase().includes(q)
+        (item.style || '').toLowerCase().includes(q) ||
+        (item.category || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -64,7 +67,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search characters by species, prompt traits, or style..."
+            placeholder="Search images by prompt keywords or style..."
             className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500"
           />
         </div>
@@ -80,7 +83,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              All Art ({artworks.length})
+              All ({artworks.length})
             </button>
             <button
               onClick={() => setFilterType('favorites')}
@@ -95,15 +98,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             </button>
           </div>
 
-          {speciesList.length > 1 && (
+          {styleList.length > 1 && (
             <select
-              value={speciesFilter}
-              onChange={(e) => setSpeciesFilter(e.target.value)}
+              value={styleFilter}
+              onChange={(e) => setStyleFilter(e.target.value)}
               className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-orange-500"
             >
-              <option value="all">All Species</option>
-              {speciesList.map((sp) => (
-                <option key={sp} value={sp}>{sp}</option>
+              <option value="all">All Styles</option>
+              {styleList.map((st) => (
+                <option key={st} value={st}>{st}</option>
               ))}
             </select>
           )}
@@ -136,12 +139,12 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               >
                 <img
                   src={item.imageUrl}
-                  alt={`${item.species} artwork`}
+                  alt={item.style || 'Generated image'}
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     const target = e.currentTarget;
-                    if (!target.src.includes('showcase_furry_fox.jpg')) {
-                      target.src = './images/showcase_furry_fox.jpg';
+                    if (!target.src.includes('showcase_portrait.jpg')) {
+                      target.src = './images/showcase_portrait.jpg';
                     }
                   }}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -155,7 +158,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                         e.stopPropagation();
                         onRemix(item.configSnapshot);
                       }}
-                      title="Remix this character in studio"
+                      title="Remix this prompt in studio"
                       className="p-2 rounded-lg bg-slate-900/90 text-orange-400 hover:bg-orange-500 hover:text-slate-950 transition-colors backdrop-blur-md"
                     >
                       <Wand2 className="h-4 w-4" />
@@ -194,11 +197,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               <div className="p-3.5 flex flex-col justify-between flex-1 gap-2">
                 <div>
                   <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span className="font-semibold text-slate-200">{item.species}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate">{item.style}</span>
+                    <span className="font-semibold text-slate-200 truncate">{item.style}</span>
                     <span aria-hidden="true">·</span>
                     <span className="font-mono tabular-nums">{item.aspectRatio}</span>
+                    {item.isNsfw && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="text-amber-400 text-[10px]">NSFW</span>
+                      </>
+                    )}
                   </div>
 
                   <p className="text-xs text-slate-300 line-clamp-2 mt-1 font-sans leading-relaxed">
@@ -221,7 +228,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           <p className="text-xs text-slate-400 max-w-sm mb-6 leading-relaxed">
             {searchQuery
               ? 'No generated creations match your search keywords. Try adjusting your query or filters.'
-              : 'Your gallery is empty. Head into the Character Studio to craft and generate your first fursona!'}
+              : 'Your gallery is empty. Head into the Generator Studio to create your first image!'}
           </p>
 
           <button
@@ -229,7 +236,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-semibold text-slate-950 hover:bg-orange-400 transition-colors shadow-md shadow-orange-500/20"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Open Character Studio</span>
+            <span>Open Studio</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>

@@ -1,20 +1,13 @@
-export interface FurryCharacterConfig {
-  species: string;
-  category: string;
-  subspecies?: string;
-  genderOrBuild: string;
-  furColor: string;
-  patternType: string;
-  eyeColor: string;
-  expression: string;
-  clothing: string;
-  accessories: string[];
-  artStyle: string;
-  lighting: string;
-  background: string;
-  aspectRatio: '1:1' | '3:4' | '4:3' | '16:9' | '9:16';
-  customNotes: string;
+export interface ImageGenerationConfig {
+  prompt: string;
   negativePrompt: string;
+  category: string;
+  style: string;
+  lighting: string;
+  camera: string;
+  aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+  enableNsfw: boolean;
+  seed: number;
 }
 
 export interface GeneratedArtwork {
@@ -22,30 +15,22 @@ export interface GeneratedArtwork {
   imageUrl: string;
   prompt: string;
   negativePrompt: string;
-  species: string;
+  category: string;
   style: string;
   engineUsed: 'perchance' | 'ai-fallback';
   createdAt: number;
   isFavorite: boolean;
   aspectRatio: string;
   seed: number;
-  configSnapshot?: FurryCharacterConfig;
+  isNsfw?: boolean;
+  configSnapshot?: ImageGenerationConfig;
 }
 
-export interface SpeciesOption {
-  id: string;
-  name: string;
-  category: 'Canines' | 'Felines' | 'Mythical' | 'Cybernetic' | 'Small Mammals' | 'Scalies' | 'Avians';
-  description: string;
-  popularTraits: string[];
-  defaultStyle: string;
-}
-
-export interface PresetArchetype {
+export interface PresetTemplate {
   id: string;
   title: string;
-  species: string;
   tagline: string;
-  config: Partial<FurryCharacterConfig>;
   previewImage: string;
+  category: string;
+  config: Partial<ImageGenerationConfig>;
 }

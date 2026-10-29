@@ -4,29 +4,29 @@ import {
   Wand2,
   Sliders,
   Palette,
-  Shirt,
   SunMedium,
+  Camera,
   Check,
   RotateCcw,
   RefreshCw,
-  Flame
+  Flame,
+  ShieldAlert,
+  ShieldCheck,
+  HelpCircle
 } from 'lucide-react';
-import { FurryCharacterConfig } from '../types';
+import { ImageGenerationConfig } from '../types';
 import {
-  SPECIES_CATALOG,
+  STYLE_CATEGORIES,
   ART_STYLES,
-  LIGHTING_PRESETS,
-  COLOR_PALETTES,
-  PATTERN_MARKINGS,
-  EXPRESSION_PRESETS,
-  CLOTHING_PRESETS,
-  ACCESSORY_OPTIONS,
-  compileFurryPrompt
-} from '../data/furryData';
+  LIGHTING_OPTIONS,
+  CAMERA_OPTIONS,
+  PROMPT_IDEAS,
+  compileStudioPrompt
+} from '../data/studioData';
 
 interface CreatorPanelProps {
-  config: FurryCharacterConfig;
-  onChangeConfig: (newConfig: FurryCharacterConfig) => void;
+  config: ImageGenerationConfig;
+  onChangeConfig: (newConfig: ImageGenerationConfig) => void;
   onGenerate: () => void;
   isGenerating: boolean;
   onReset: () => void;
@@ -43,51 +43,35 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
   enginePreference,
   setEnginePreference
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'species' | 'fur' | 'attire' | 'style'>('species');
-  const [speciesCategoryFilter, setSpeciesCategoryFilter] = useState<string>('All');
+  const [activeSubTab, setActiveSubTab] = useState<'styles' | 'lighting' | 'camera' | 'settings'>('styles');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All Styles');
   const [isEnhancing, setIsEnhancing] = useState<boolean>(false);
   const [showNegative, setShowNegative] = useState<boolean>(false);
   const [promptToast, setPromptToast] = useState<string | null>(null);
 
-  const compiled = compileFurryPrompt(config);
+  const compiled = compileStudioPrompt(config);
 
-  const categories = ['All', 'Canines', 'Felines', 'Cybernetic', 'Mythical', 'Small Mammals', 'Scalies'];
-
-  const filteredSpecies = speciesCategoryFilter === 'All'
-    ? SPECIES_CATALOG
-    : SPECIES_CATALOG.filter(s => s.category === speciesCategoryFilter);
-
-  const handleSpeciesSelect = (name: string, category: string) => {
-    const selected = SPECIES_CATALOG.find(s => s.name === name);
-    onChangeConfig({
-      ...config,
-      species: name,
-      category: category,
-      artStyle: selected?.defaultStyle || config.artStyle
-    });
-  };
-
-  const toggleAccessory = (item: string) => {
-    const exists = config.accessories.includes(item);
-    const updated = exists
-      ? config.accessories.filter(a => a !== item)
-      : [...config.accessories, item];
-    onChangeConfig({ ...config, accessories: updated });
-  };
+  const filteredStyles = selectedCategory === 'All Styles'
+    ? ART_STYLES
+    : ART_STYLES.filter(s => s.category === selectedCategory);
 
   const handleEnhanceWithAI = async () => {
+    if (!config.prompt.trim()) {
+      setPromptToast('Please type a prompt idea first!');
+      setTimeout(() => setPromptToast(null), 3000);
+      return;
+    }
     setIsEnhancing(true);
     try {
       const resp = await fetch('/api/enhance-prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          species: config.species,
-          traits: [config.furColor, config.patternType, config.expression, ...config.accessories],
-          style: config.artStyle,
-          mood: config.expression,
-          clothes: config.clothing,
-          customPrompt: config.customNotes
+          userPrompt: config.prompt,
+          style: config.style,
+          lighting: config.lighting,
+          camera: config.camera,
+          enableNsfw: config.enableNsfw
         })
       });
 
@@ -96,10 +80,10 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
         if (data.enhancedPrompt) {
           onChangeConfig({
             ...config,
-            customNotes: data.enhancedPrompt,
+            prompt: data.enhancedPrompt,
             negativePrompt: data.negativePrompt || config.negativePrompt
           });
-          setPromptToast('Prompt enriched with vivid fur & lighting details!');
+          setPromptToast('Prompt enriched with rich artistic detail!');
           setTimeout(() => setPromptToast(null), 3500);
         }
       }
@@ -110,24 +94,36 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
     }
   };
 
+  const handleRandomIdea = () => {
+    const randomIdea = PROMPT_IDEAS[Math.floor(Math.random() * PROMPT_IDEAS.length)];
+    onChangeConfig({
+      ...config,
+      prompt: randomIdea
+    });
+    setPromptToast('Inserted prompt idea!');
+    setTimeout(() => setPromptToast(null), 2500);
+  };
+
   return (
     <div className="flex flex-col rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 backdrop-blur-sm">
-      {/* Panel Header */}
+      {/* Header with Title and Reset */}
       <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
         <div>
-          <h2 className="text-base font-semibold text-white tracking-tight">Character Studio</h2>
+          <h2 className="text-base font-semibold text-white tracking-tight">Image Generator Studio</h2>
           <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-            <span>{config.species}</span>
-            <span aria-hidden="true">·</span>
-            <span>{config.artStyle}</span>
+            <span>{config.style}</span>
             <span aria-hidden="true">·</span>
             <span>{config.aspectRatio}</span>
+            <span aria-hidden="true">·</span>
+            <span className={config.enableNsfw ? 'text-amber-400 font-medium' : 'text-emerald-400'}>
+              {config.enableNsfw ? 'NSFW Allowed' : 'Safe Mode'}
+            </span>
           </div>
         </div>
 
         <button
           onClick={onReset}
-          title="Reset to default"
+          title="Reset to default settings"
           className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:text-white hover:bg-slate-800/70 transition-colors"
         >
           <RotateCcw className="h-3 w-3" />
@@ -135,68 +131,153 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
         </button>
       </div>
 
-      {/* Main Subtabs */}
-      <div className="flex items-center gap-1 p-1 bg-slate-950/70 rounded-xl mb-4 border border-slate-800/70">
-        <button
-          onClick={() => setActiveSubTab('species')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-            activeSubTab === 'species'
-              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Sliders className="h-3.5 w-3.5" />
-          <span>Species</span>
-        </button>
+      {/* Prominent Custom Prompt Input ("i want to add me own prompts too") */}
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+            <Wand2 className="h-3.5 w-3.5 text-orange-400" />
+            <span>Your Custom Prompt</span>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRandomIdea}
+              className="text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              Try Idea
+            </button>
+            <span aria-hidden="true" className="text-slate-600">·</span>
+            <button
+              onClick={handleEnhanceWithAI}
+              disabled={isEnhancing}
+              className="flex items-center gap-1 text-[11px] font-medium text-orange-400 hover:text-orange-300 transition-colors disabled:opacity-50"
+            >
+              {isEnhancing ? (
+                <RefreshCw className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}
+              <span>{isEnhancing ? 'Enhancing...' : 'AI Enhance'}</span>
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          rows={3}
+          value={config.prompt}
+          onChange={(e) => onChangeConfig({ ...config, prompt: e.target.value })}
+          placeholder="Describe any scene, character, object, portrait, or landscape you want to generate in full detail..."
+          className="w-full rounded-xl bg-slate-950 border border-slate-800/90 p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-orange-500 font-sans leading-relaxed transition-colors selection:bg-orange-500/30"
+        />
+
+        {promptToast && (
+          <div className="text-[11px] text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-1 rounded-md animate-fade-in">
+            {promptToast}
+          </div>
+        )}
+      </div>
+
+      {/* NSFW Enable / Disable Toggle Strip */}
+      <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-4">
+        <div className="flex items-center gap-2.5">
+          {config.enableNsfw ? (
+            <ShieldAlert className="h-4 w-4 text-amber-400" />
+          ) : (
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+          )}
+          <div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+              <span>NSFW Content Filter</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${config.enableNsfw ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
+                {config.enableNsfw ? 'UNRESTRICTED' : 'SAFE'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {config.enableNsfw
+                ? 'NSFW filter disabled. Mature, artistic, and unrestricted generation enabled.'
+                : 'NSFW filter enabled. Explicit and mature content blocked from prompt outputs.'}
+            </p>
+          </div>
+        </div>
 
         <button
-          onClick={() => setActiveSubTab('fur')}
+          onClick={() => onChangeConfig({ ...config, enableNsfw: !config.enableNsfw })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            config.enableNsfw ? 'bg-amber-500' : 'bg-slate-700'
+          }`}
+          role="switch"
+          aria-checked={config.enableNsfw}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+              config.enableNsfw ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* Main Subtabs for Modifiers */}
+      <div className="flex items-center gap-1 p-1 bg-slate-950/70 rounded-xl mb-4 border border-slate-800/70">
+        <button
+          onClick={() => setActiveSubTab('styles')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-            activeSubTab === 'fur'
+            activeSubTab === 'styles'
               ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
               : 'text-slate-400 hover:text-white'
           }`}
         >
           <Palette className="h-3.5 w-3.5" />
-          <span>Fur & Pattern</span>
+          <span>Art Styles</span>
         </button>
 
         <button
-          onClick={() => setActiveSubTab('attire')}
+          onClick={() => setActiveSubTab('lighting')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-            activeSubTab === 'attire'
-              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Shirt className="h-3.5 w-3.5" />
-          <span>Attire & Gear</span>
-        </button>
-
-        <button
-          onClick={() => setActiveSubTab('style')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-            activeSubTab === 'style'
+            activeSubTab === 'lighting'
               ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
               : 'text-slate-400 hover:text-white'
           }`}
         >
           <SunMedium className="h-3.5 w-3.5" />
-          <span>Style & Light</span>
+          <span>Lighting</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('camera')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
+            activeSubTab === 'camera'
+              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Camera className="h-3.5 w-3.5" />
+          <span>Camera & Lens</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('settings')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
+            activeSubTab === 'settings'
+              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Sliders className="h-3.5 w-3.5" />
+          <span>Ratio & Seed</span>
         </button>
       </div>
 
-      {/* Tab 1: Species Selection */}
-      {activeSubTab === 'species' && (
-        <div className="space-y-4">
-          {/* Category Filter */}
+      {/* Subtab 1: Art Styles Across All Genres */}
+      {activeSubTab === 'styles' && (
+        <div className="space-y-3">
+          {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            {categories.map((cat) => (
+            {STYLE_CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSpeciesCategoryFilter(cat)}
+                onClick={() => setSelectedCategory(cat)}
                 className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap ${
-                  speciesCategoryFilter === cat
+                  selectedCategory === cat
                     ? 'bg-slate-800 text-white font-medium border border-slate-700'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                 }`}
@@ -206,14 +287,14 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
             ))}
           </div>
 
-          {/* Species Grid */}
+          {/* Styles Grid */}
           <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-            {filteredSpecies.map((s) => {
-              const isSelected = config.species === s.name;
+            {filteredStyles.map((style) => {
+              const isSelected = config.style === style.name;
               return (
                 <button
-                  key={s.id}
-                  onClick={() => handleSpeciesSelect(s.name, s.category)}
+                  key={style.id}
+                  onClick={() => onChangeConfig({ ...config, style: style.name })}
                   className={`flex flex-col text-left p-2.5 rounded-xl border transition-all ${
                     isSelected
                       ? 'border-orange-500/60 bg-orange-500/10 shadow-sm'
@@ -221,231 +302,82 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-100">{s.name}</span>
+                    <span className="text-xs font-semibold text-slate-100">{style.name}</span>
                     {isSelected && <Check className="h-3 w-3 text-orange-400" />}
                   </div>
-                  <span className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-tight">
-                    {s.description}
+                  <span className="text-[11px] text-slate-400 mt-1 line-clamp-1 leading-tight">
+                    {style.category}
                   </span>
                 </button>
               );
             })}
           </div>
+        </div>
+      )}
 
-          {/* Body Build & Expression */}
-          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800/70">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Build / Posture</label>
-              <select
-                value={config.genderOrBuild}
-                onChange={(e) => onChangeConfig({ ...config, genderOrBuild: e.target.value })}
-                className="w-full rounded-lg bg-slate-950 border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-orange-500"
-              >
-                <option value="Agile & Slender">Agile & Slender</option>
-                <option value="Broad & Muscular">Broad & Muscular</option>
-                <option value="Tall & Regal">Tall & Regal</option>
-                <option value="Cute & Chubby">Cute & Chubby</option>
-                <option value="Sleek Bipedal Chassis">Sleek Bipedal Chassis</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">Expression</label>
-              <select
-                value={config.expression}
-                onChange={(e) => onChangeConfig({ ...config, expression: e.target.value })}
-                className="w-full rounded-lg bg-slate-950 border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-orange-500"
-              >
-                {EXPRESSION_PRESETS.map((expr) => (
-                  <option key={expr} value={expr}>{expr}</option>
-                ))}
-              </select>
-            </div>
+      {/* Subtab 2: Lighting & Atmosphere */}
+      {activeSubTab === 'lighting' && (
+        <div className="space-y-3">
+          <label className="block text-xs font-medium text-slate-300">Atmospheric Illumination</label>
+          <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+            {LIGHTING_OPTIONS.map((light) => {
+              const isSelected = config.lighting === light.name;
+              return (
+                <button
+                  key={light.id}
+                  onClick={() => onChangeConfig({ ...config, lighting: light.name })}
+                  className={`flex items-center justify-between text-left p-2.5 rounded-xl border text-xs transition-colors ${
+                    isSelected
+                      ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-semibold'
+                      : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="truncate">{light.name}</span>
+                  {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Tab 2: Fur & Markings */}
-      {activeSubTab === 'fur' && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Fur Color Palette</label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-              {COLOR_PALETTES.map((palette) => {
-                const isSelected = config.furColor === palette;
-                return (
-                  <button
-                    key={palette}
-                    onClick={() => onChangeConfig({ ...config, furColor: palette })}
-                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      isSelected
-                        ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-medium'
-                        : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="truncate">{palette}</span>
-                    {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Pattern & Markings</label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-              {PATTERN_MARKINGS.map((pat) => {
-                const isSelected = config.patternType === pat;
-                return (
-                  <button
-                    key={pat}
-                    onClick={() => onChangeConfig({ ...config, patternType: pat })}
-                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      isSelected
-                        ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-medium'
-                        : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="truncate">{pat}</span>
-                    {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Eye Color</label>
-            <input
-              type="text"
-              value={config.eyeColor}
-              onChange={(e) => onChangeConfig({ ...config, eyeColor: e.target.value })}
-              placeholder="e.g. Amber Gold, Bioluminescent Cyan"
-              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-orange-500"
-            />
+      {/* Subtab 3: Camera & Lens */}
+      {activeSubTab === 'camera' && (
+        <div className="space-y-3">
+          <label className="block text-xs font-medium text-slate-300">Camera Lens & Perspective</label>
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            {CAMERA_OPTIONS.map((cam) => {
+              const isSelected = config.camera === cam.name;
+              return (
+                <button
+                  key={cam.id}
+                  onClick={() => onChangeConfig({ ...config, camera: cam.name })}
+                  className={`w-full flex items-center justify-between text-left p-2.5 rounded-xl border text-xs transition-colors ${
+                    isSelected
+                      ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-semibold'
+                      : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="truncate">{cam.name}</span>
+                  {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Tab 3: Attire & Gear */}
-      {activeSubTab === 'attire' && (
+      {/* Subtab 4: Aspect Ratio & Seed */}
+      {activeSubTab === 'settings' && (
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Outfit & Wardrobe</label>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-              {CLOTHING_PRESETS.map((outfit) => {
-                const isSelected = config.clothing === outfit;
-                return (
-                  <button
-                    key={outfit}
-                    onClick={() => onChangeConfig({ ...config, clothing: outfit })}
-                    className={`w-full flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      isSelected
-                        ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-medium'
-                        : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="truncate">{outfit}</span>
-                    {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Accessories & Gear</label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-              {ACCESSORY_OPTIONS.map((item) => {
-                const isChecked = config.accessories.includes(item);
-                return (
-                  <button
-                    key={item}
-                    onClick={() => toggleAccessory(item)}
-                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      isChecked
-                        ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-300 font-medium'
-                        : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
-                  >
-                    <span className="truncate">{item}</span>
-                    {isChecked && <Check className="h-3 w-3 text-indigo-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 4: Art Style & Lighting */}
-      {activeSubTab === 'style' && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Art Aesthetic</label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-              {ART_STYLES.map((style) => {
-                const isSelected = config.artStyle === style.name;
-                return (
-                  <button
-                    key={style.id}
-                    onClick={() => onChangeConfig({ ...config, artStyle: style.name })}
-                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      isSelected
-                        ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-medium'
-                        : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="truncate">{style.name}</span>
-                    {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Lighting & Atmosphere</label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-              {LIGHTING_PRESETS.map((light) => {
-                const isSelected = config.lighting === light.name;
-                return (
-                  <button
-                    key={light.id}
-                    onClick={() => onChangeConfig({ ...config, lighting: light.name })}
-                    className={`flex items-center justify-between text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      isSelected
-                        ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-medium'
-                        : 'border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className="truncate">{light.name}</span>
-                    {isSelected && <Check className="h-3 w-3 text-orange-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Background Environment</label>
-            <input
-              type="text"
-              value={config.background}
-              onChange={(e) => onChangeConfig({ ...config, background: e.target.value })}
-              placeholder="e.g. Neon city rooftop, Misty enchanted pine forest"
-              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-orange-500"
-            />
-          </div>
-
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1.5">Aspect Ratio</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {(['1:1', '3:4', '4:3', '16:9'] as const).map((ratio) => (
+            <div className="grid grid-cols-5 gap-1.5">
+              {(['1:1', '16:9', '9:16', '4:3', '3:4'] as const).map((ratio) => (
                 <button
                   key={ratio}
                   onClick={() => onChangeConfig({ ...config, aspectRatio: ratio })}
-                  className={`py-1.5 rounded-lg border text-xs font-mono tabular-nums transition-colors ${
+                  className={`py-2 rounded-lg border text-xs font-mono tabular-nums transition-colors ${
                     config.aspectRatio === ratio
                       ? 'border-orange-500/60 bg-orange-500/10 text-orange-300 font-medium'
                       : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
@@ -456,76 +388,51 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
               ))}
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Random Seed</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={config.seed}
+                onChange={(e) => onChangeConfig({ ...config, seed: parseInt(e.target.value) || 0 })}
+                className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-slate-200 font-mono tabular-nums focus:outline-none focus:border-orange-500"
+              />
+              <button
+                onClick={() => onChangeConfig({ ...config, seed: Math.floor(Math.random() * 9000000) + 1000000 })}
+                className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors shrink-0"
+              >
+                Randomize
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Live Prompt Preview & Custom Modifiers */}
+      {/* Negative Prompt & Filters */}
       <div className="mt-4 pt-4 border-t border-slate-800/80">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-            <Wand2 className="h-3.5 w-3.5 text-orange-400" />
-            <span>Compiled Prompt Stream</span>
-          </label>
-
-          <button
-            onClick={handleEnhanceWithAI}
-            disabled={isEnhancing}
-            className="flex items-center gap-1 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50"
-          >
-            {isEnhancing ? (
-              <RefreshCw className="h-3 w-3 animate-spin" />
-            ) : (
-              <Sparkles className="h-3 w-3" />
-            )}
-            <span>{isEnhancing ? 'Enriching...' : 'Enrich with AI'}</span>
-          </button>
-        </div>
-
-        {promptToast && (
-          <div className="text-[11px] text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-1 rounded-md mb-2 animate-fade-in">
-            {promptToast}
-          </div>
-        )}
-
-        {/* Live Prompt Box */}
-        <div className="rounded-xl bg-slate-950/80 border border-slate-800/90 p-2.5 text-xs text-slate-300 font-mono leading-relaxed max-h-24 overflow-y-auto selection:bg-orange-500/30">
-          <span className="text-orange-400 font-medium">Anthropomorphic {config.species}</span>
-          {config.furColor && <span className="text-slate-400">, {config.furColor} fur</span>}
-          {config.patternType && <span className="text-slate-400">, pattern: {config.patternType}</span>}
-          {config.clothing && <span className="text-indigo-300">, wearing {config.clothing}</span>}
-          {config.artStyle && <span className="text-amber-300">, {config.artStyle} aesthetic</span>}
-          {config.customNotes && <span className="text-cyan-300">, {config.customNotes}</span>}
-        </div>
-
-        {/* Custom Notes / Prompt Additions */}
-        <div className="mt-2.5">
-          <input
-            type="text"
-            value={config.customNotes}
-            onChange={(e) => onChangeConfig({ ...config, customNotes: e.target.value })}
-            placeholder="Additional prompt details (e.g., iridescent scales, holding a glowing staff)..."
-            className="w-full rounded-lg bg-slate-950/90 border border-slate-800/80 px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500"
-          />
-        </div>
-
-        {/* Negative Prompt Accordion */}
-        <div className="mt-2">
           <button
             onClick={() => setShowNegative(!showNegative)}
-            className="text-[11px] text-slate-400 hover:text-slate-300 transition-colors flex items-center gap-1"
+            className="text-xs font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-1"
           >
             <span>{showNegative ? '− Hide Negative Prompt' : '+ Negative Prompt Filters'}</span>
           </button>
 
-          {showNegative && (
-            <textarea
-              rows={2}
-              value={config.negativePrompt}
-              onChange={(e) => onChangeConfig({ ...config, negativePrompt: e.target.value })}
-              className="mt-1.5 w-full rounded-lg bg-slate-950 border border-slate-800/80 p-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-orange-500"
-            />
-          )}
+          <span className="text-[11px] text-slate-500 font-mono">
+            {config.enableNsfw ? 'Uncensored Mode' : 'Safe Filter Active'}
+          </span>
         </div>
+
+        {showNegative && (
+          <textarea
+            rows={2}
+            value={config.negativePrompt}
+            onChange={(e) => onChangeConfig({ ...config, negativePrompt: e.target.value })}
+            placeholder="Things to avoid (e.g., blurry, distorted hands, extra limbs)..."
+            className="w-full rounded-lg bg-slate-950 border border-slate-800/80 p-2.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-orange-500 leading-relaxed"
+          />
+        )}
       </div>
 
       {/* Engine Switcher & Generation Trigger */}
@@ -541,7 +448,7 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Perchance + Fallback
+              Perchance + AI
             </button>
             <button
               onClick={() => setEnginePreference('perchance')}
@@ -564,12 +471,12 @@ export const CreatorPanel: React.FC<CreatorPanelProps> = ({
           {isGenerating ? (
             <>
               <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>Generating Furry Artwork...</span>
+              <span>Generating Image...</span>
             </>
           ) : (
             <>
               <Flame className="h-4 w-4" />
-              <span>Generate via Perchance Engine</span>
+              <span>Generate Image</span>
             </>
           )}
         </button>

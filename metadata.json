@@ -1,6 +1,6 @@
 {
-  "name": "FurryCraft Studio — Perchance AI Generator",
-  "description": "Create, customize, and generate anthropomorphic furry artwork with the Perchance generator bridge, visual character creator, and creative gallery.",
+  "name": "PixelStudio AI — Universal Image Generator",
+  "description": "Create, customize, and generate photoreal, anime, 3D, and digital artwork across all styles with custom prompts, NSFW controls, and Perchance bridge.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

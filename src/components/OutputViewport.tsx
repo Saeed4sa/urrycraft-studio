@@ -9,14 +9,15 @@ import {
   ExternalLink,
   Layers,
   Wand2,
-  RefreshCw
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
-import { GeneratedArtwork, FurryCharacterConfig } from '../types';
+import { GeneratedArtwork, ImageGenerationConfig } from '../types';
 
 interface OutputViewportProps {
   currentArtwork: GeneratedArtwork | null;
   isGenerating: boolean;
-  onRemix: (config?: FurryCharacterConfig) => void;
+  onRemix: (config?: ImageGenerationConfig) => void;
   onToggleFavorite: (id: string) => void;
   onOpenLightbox: (artwork: GeneratedArtwork) => void;
   onOpenPerchanceDirect: (prompt: string) => void;
@@ -44,7 +45,7 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
     if (!currentArtwork) return;
     const link = document.createElement('a');
     link.href = currentArtwork.imageUrl;
-    link.download = `furrycraft_${currentArtwork.species.toLowerCase().replace(/\s+/g, '_')}_${currentArtwork.seed || Date.now()}.jpg`;
+    link.download = `pixelstudio_${currentArtwork.style.toLowerCase().replace(/\s+/g, '_')}_${currentArtwork.seed || Date.now()}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -84,9 +85,9 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
               <div className="h-16 w-16 rounded-full border-2 border-orange-500/20 border-t-orange-500 animate-spin" />
               <Sparkles className="absolute h-6 w-6 text-orange-400 animate-pulse" />
             </div>
-            <h3 className="text-sm font-semibold text-white mb-1">Synthesizing Furry Art</h3>
+            <h3 className="text-sm font-semibold text-white mb-1">Synthesizing Artwork</h3>
             <p className="text-xs text-slate-400 max-w-xs">
-              Feeding engineered prompt tokens to the generation bridge...
+              Generating image pixels from your custom prompt...
             </p>
           </div>
         )}
@@ -96,12 +97,12 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
           <>
             <img
               src={currentArtwork.imageUrl}
-              alt={`${currentArtwork.species} artwork`}
+              alt={currentArtwork.style || 'Generated artwork'}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.src.includes('showcase_furry_fox.jpg')) {
-                  target.src = './images/showcase_furry_fox.jpg';
+                if (!target.src.includes('showcase_portrait.jpg')) {
+                  target.src = './images/showcase_portrait.jpg';
                 }
               }}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
@@ -135,7 +136,7 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
             <Sparkles className="h-10 w-10 text-slate-600 mb-3" />
             <h3 className="text-sm font-medium text-slate-300 mb-1">Canvas Ready</h3>
             <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-              Customize your fursona traits on the left panel and click Generate to start.
+              Type your custom prompt on the left and select your favorite style to generate.
             </p>
           </div>
         )}
@@ -157,7 +158,7 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
               ) : (
                 <>
                   <Download className="h-3.5 w-3.5" />
-                  <span>Download Artwork</span>
+                  <span>Download Image</span>
                 </>
               )}
             </button>
@@ -165,7 +166,7 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
             <button
               onClick={() => onRemix(currentArtwork.configSnapshot)}
               className="flex items-center justify-center gap-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 px-3.5 py-2.5 text-xs font-semibold transition-colors border border-orange-500/30"
-              title="Load character settings back into the studio"
+              title="Load prompt settings back into the studio"
             >
               <Wand2 className="h-3.5 w-3.5" />
               <span>Remix</span>
@@ -192,23 +193,25 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
             <button
               onClick={() => onOpenPerchanceDirect(currentArtwork.prompt)}
               className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 px-3 py-2.5 text-xs font-medium transition-colors border border-slate-700/50"
-              title="View directly on perchance.org/ai-furry-generator"
+              title="View on perchance.org"
             >
               <ExternalLink className="h-3.5 w-3.5 text-orange-400" />
-              <span>Perchance Site</span>
+              <span>Perchance</span>
             </button>
           </div>
 
           {/* Metadata Breakdown (Zero-Pill discipline) */}
           <div className="rounded-xl bg-slate-950/70 border border-slate-800/70 p-3.5 space-y-2">
             <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="font-semibold text-slate-200">{currentArtwork.species}</span>
-              <span aria-hidden="true">·</span>
-              <span>{currentArtwork.style}</span>
+              <span className="font-semibold text-slate-200">{currentArtwork.style}</span>
               <span aria-hidden="true">·</span>
               <span className="font-mono tabular-nums">{currentArtwork.aspectRatio}</span>
               <span aria-hidden="true">·</span>
               <span>{new Date(currentArtwork.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span aria-hidden="true">·</span>
+              <span className={currentArtwork.isNsfw ? 'text-amber-400 font-medium' : 'text-emerald-400'}>
+                {currentArtwork.isNsfw ? 'NSFW' : 'Safe'}
+              </span>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3">

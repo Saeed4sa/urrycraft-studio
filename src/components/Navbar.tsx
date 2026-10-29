@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Dna, Image as ImageIcon, BookOpen, Cpu } from 'lucide-react';
+import { Sparkles, Wand2, Image as ImageIcon, Palette, Cpu } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: 'studio' | 'gallery' | 'presets' | 'engine';
@@ -26,9 +26,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0 hover:text-orange-400 transition-colors"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 text-slate-950 font-black shadow-md shadow-orange-500/20">
-          F
+          P
         </span>
-        <span>FurryCraft Studio</span>
+        <span>PixelStudio AI</span>
       </a>
 
       {/* Zone 2: 4 clean single-line nav links */}
@@ -39,8 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             activeTab === 'studio' ? 'text-orange-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <Dna className="h-4 w-4" />
-          <span>Character Studio</span>
+          <Wand2 className="h-4 w-4" />
+          <span>Generator Studio</span>
         </button>
 
         <button
@@ -59,8 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             activeTab === 'presets' ? 'text-orange-400 font-semibold' : 'text-slate-400'
           }`}
         >
-          <BookOpen className="h-4 w-4" />
-          <span>Archetypes</span>
+          <Palette className="h-4 w-4" />
+          <span>Style Presets</span>
         </button>
 
         <button
@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-orange-400 transition-colors shadow-sm hover:shadow-orange-500/20 whitespace-nowrap shrink-0 active:scale-95"
         >
           <Sparkles className="h-3.5 w-3.5" />
-          <span>Surprise Me</span>
+          <span>Inspire Prompt</span>
         </button>
       </div>
     </header>

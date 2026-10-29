@@ -27,24 +27,24 @@ const ai = process.env.GEMINI_API_KEY
     })
   : null;
 
-// Endpoint: AI-Powered Furry Prompt Enhancer using Gemini 3.8 Flash
+// Endpoint: AI-Powered Universal Prompt Enhancer using Gemini 3.8 Flash
 app.post('/api/enhance-prompt', async (req, res) => {
   try {
-    const { species, traits = [], style, mood, clothes, customPrompt = '' } = req.body;
+    const { userPrompt = '', style = '', lighting = '', camera = '', enableNsfw = false } = req.body;
 
     if (!ai) {
       // Fallback local prompt enricher if Gemini API key is not yet configured
       const enriched = [
-        customPrompt || `Anthropomorphic ${species || 'mystic creature'} character`,
-        traits.length ? traits.join(', ') : 'detailed expressive fur, sleek anatomy',
-        clothes ? `wearing ${clothes}` : 'intricate custom attire',
-        mood ? `expression: ${mood}` : 'vibrant expressive posture',
-        style ? `${style} aesthetic` : 'digital concept art masterpiece',
-        'volumetric cinematic lighting',
-        'subtle fur texture details, studio character portrait, 8k resolution, fur affinity style masterpiece'
+        userPrompt || 'Breathtaking masterpiece concept art',
+        style ? `${style} aesthetic` : '8k high resolution',
+        lighting ? `lighting: ${lighting}` : 'volumetric cinematic lighting',
+        camera ? `camera: ${camera}` : 'sharp focal plane',
+        'masterpiece, ultra-detailed, sharp focus, professional color grading'
       ].filter(Boolean).join(', ');
 
-      const negativePrompt = 'deformed anatomy, extra limbs, bad paws, blurry, poorly drawn hands, disfigured, mutated, low quality, artifacting, bad face';
+      const negativePrompt = enableNsfw
+        ? 'blurry, low quality, deformed anatomy, extra limbs, bad hands, artifacts'
+        : 'nsfw, nude, explicit, blurry, low quality, deformed anatomy, extra limbs, bad hands, artifacts';
 
       return res.json({
         enhancedPrompt: enriched,
@@ -55,19 +55,18 @@ app.post('/api/enhance-prompt', async (req, res) => {
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.8-flash',
-      contents: `You are an expert prompt engineer specialized in anthropomorphic furry artwork (fursonas, OCs) for text-to-image engines like Perchance, SDXL, and FLUX.
-Convert the following character specifications into an art prompt:
-- Species: ${species || 'Furry creature'}
-- Traits: ${traits.join(', ')}
-- Outfit: ${clothes || 'None'}
-- Expression/Mood: ${mood || 'Charismatic'}
-- Desired Art Style: ${style || 'Digital Concept Art'}
-- User Notes: ${customPrompt || 'None'}
+      contents: `You are an expert prompt engineer for cutting-edge text-to-image models (FLUX, SDXL, Midjourney, Perchance).
+Enhance the following prompt idea into an exceptional, production-grade image generation prompt:
+- User Prompt / Subject: ${userPrompt || 'A stunning artistic creation'}
+- Desired Style: ${style || 'Cinematic Photorealism or Concept Art'}
+- Lighting: ${lighting || 'Cinematic studio illumination'}
+- Camera/Framing: ${camera || 'Professional lens framing'}
+- Content Filter Mode: ${enableNsfw ? 'Unrestricted / Mature allowed' : 'Strictly Safe (No NSFW, no gore)'}
 
 Return a JSON object with:
-- "enhancedPrompt": A descriptive, comma-separated art prompt with vivid fur/scale texture, lighting, anatomy, clothing, and aesthetic modifiers.
-- "negativePrompt": Optimized negative prompt preventing common furry generation defects (extra limbs, distorted paws, low resolution, muddy fur).
-- "characterTagline": A 1-sentence catchy description of this fursona character.`,
+- "enhancedPrompt": A descriptive, comma-separated art prompt with vivid textures, lighting conditions, atmosphere, depth, and aesthetic modifiers.
+- "negativePrompt": Optimal negative prompt preventing common defects (deformed anatomy, distorted hands, blurry textures, compression artifacts, ${enableNsfw ? '' : 'nsfw, explicit, nude'}).
+- "tagline": A 1-sentence catchy description of the scene.`,
       config: {
         responseMimeType: 'application/json',
       },
@@ -75,9 +74,9 @@ Return a JSON object with:
 
     const parsed = JSON.parse(response.text || '{}');
     return res.json({
-      enhancedPrompt: parsed.enhancedPrompt || customPrompt,
-      negativePrompt: parsed.negativePrompt || 'bad anatomy, deformed, bad paws, blurry, artifacts',
-      characterTagline: parsed.characterTagline || `${species} character`,
+      enhancedPrompt: parsed.enhancedPrompt || userPrompt,
+      negativePrompt: parsed.negativePrompt || 'bad anatomy, deformed, blurry, artifacts',
+      tagline: parsed.tagline || 'AI Generated Image',
       enhancerUsed: 'gemini-3.8-flash'
     });
   } catch (error: any) {
@@ -87,45 +86,46 @@ Return a JSON object with:
 });
 
 // Endpoint: Perchance Generation Bridge
-// Connects with Perchance image generation parameters and provides smart fallback
 app.post('/api/generate', async (req, res) => {
   try {
     const {
       prompt,
       negativePrompt = '',
-      species = 'Character',
       style = 'Digital Art',
       seed = Math.floor(Math.random() * 9999999),
       aspectRatio = '1:1',
-      enginePreference = 'perchance'
+      enableNsfw = false,
+      enginePreference = 'auto'
     } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    // Try Perchance direct API endpoint
-    // Perchance image generation endpoint:
     let perchanceSuccess = false;
     let imageUrl = '';
     let engineUsed: 'perchance' | 'ai-fallback' = 'perchance';
 
+    // Dimensions
+    const width = aspectRatio === '16:9' ? 1024 : aspectRatio === '9:16' ? 576 : aspectRatio === '3:4' ? 768 : aspectRatio === '4:3' ? 1024 : 1024;
+    const height = aspectRatio === '16:9' ? 576 : aspectRatio === '9:16' ? 1024 : aspectRatio === '3:4' ? 1024 : aspectRatio === '4:3' ? 768 : 1024;
+
+    // Try Perchance direct API endpoint
     if (enginePreference !== 'ai-only') {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000); // 7s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
 
-        // Perchance image-generation route
         const perchanceUrl = `https://image-generation.perchance.org/api/generate?prompt=${encodeURIComponent(
           prompt
         )}&negativePrompt=${encodeURIComponent(
           negativePrompt
-        )}&seed=${seed}&resolution=${aspectRatio === '16:9' ? '1024x576' : aspectRatio === '9:16' ? '576x1024' : '768x768'}`;
+        )}&seed=${seed}&resolution=${width}x${height}&safe=${enableNsfw ? 'false' : 'true'}`;
 
         const resp = await fetch(perchanceUrl, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://perchance.org/ai-furry-generator',
+            'Referer': 'https://perchance.org/ai-text-to-image',
           },
           signal: controller.signal,
         });
@@ -148,37 +148,17 @@ app.post('/api/generate', async (req, res) => {
           }
         }
       } catch (err) {
-        // Perchance blocked or timed out
         perchanceSuccess = false;
       }
     }
 
-    // If Perchance didn't return an image, activate our high-res AI fallback
+    // High-resolution AI fallback
     if (!perchanceSuccess) {
       engineUsed = 'ai-fallback';
-
-      // Curated artistic generation fallback from local high-res templates or SVG/canvas synthesis
-      const starterCollection = [
-        '/src/assets/images/showcase_furry_fox_1793246739716.jpg',
-        '/src/assets/images/showcase_furry_wolf_1793246739715.jpg',
-        '/src/assets/images/showcase_furry_protogen_1793246742126.jpg',
-        '/src/assets/images/showcase_furry_dragon_1793246741810.jpg',
-      ];
-
-      // Match closest species template or cycle by seed
-      const lowerPrompt = prompt.toLowerCase();
-      if (lowerPrompt.includes('fox') || lowerPrompt.includes('vulpine')) {
-        imageUrl = starterCollection[0];
-      } else if (lowerPrompt.includes('wolf') || lowerPrompt.includes('canine') || lowerPrompt.includes('husky')) {
-        imageUrl = starterCollection[1];
-      } else if (lowerPrompt.includes('protogen') || lowerPrompt.includes('cyber') || lowerPrompt.includes('robot')) {
-        imageUrl = starterCollection[2];
-      } else if (lowerPrompt.includes('dragon') || lowerPrompt.includes('scalie') || lowerPrompt.includes('lizard') || lowerPrompt.includes('reptile')) {
-        imageUrl = starterCollection[3];
-      } else {
-        const idx = Math.abs(seed) % starterCollection.length;
-        imageUrl = starterCollection[idx];
-      }
+      // Direct live AI diffusion API
+      imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+        prompt
+      )}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux${enableNsfw ? '&safe=false' : '&safe=true'}`;
     }
 
     return res.json({
@@ -187,13 +167,13 @@ app.post('/api/generate', async (req, res) => {
       engineUsed,
       prompt,
       negativePrompt,
-      species,
       style,
       seed,
       aspectRatio,
+      enableNsfw,
       timestamp: Date.now(),
       perchanceStatus: perchanceSuccess ? 'connected' : 'fallback-active',
-      perchanceUrl: `https://perchance.org/ai-furry-generator#${encodeURIComponent(prompt)}`
+      perchanceUrl: `https://perchance.org/ai-text-to-image#${encodeURIComponent(prompt)}`
     });
   } catch (error: any) {
     console.error('Generate endpoint error:', error);
@@ -218,7 +198,7 @@ async function startServer() {
   }
 
   app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`FurryCraft Studio server running on http://0.0.0.0:${PORT}`);
+    console.log(`PixelStudio AI server running on http://0.0.0.0:${PORT}`);
   });
 }
 

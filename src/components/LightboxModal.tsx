@@ -6,16 +6,14 @@ import {
   Check,
   Wand2,
   Heart,
-  ExternalLink,
-  Layers,
-  Sparkles
+  ExternalLink
 } from 'lucide-react';
-import { GeneratedArtwork, FurryCharacterConfig } from '../types';
+import { GeneratedArtwork, ImageGenerationConfig } from '../types';
 
 interface LightboxModalProps {
   artwork: GeneratedArtwork | null;
   onClose: () => void;
-  onRemix: (config?: FurryCharacterConfig) => void;
+  onRemix: (config?: ImageGenerationConfig) => void;
   onToggleFavorite: (id: string) => void;
   onOpenPerchanceDirect: (prompt: string) => void;
 }
@@ -49,7 +47,7 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = artwork.imageUrl;
-    link.download = `furrycraft_${artwork.species.toLowerCase().replace(/\s+/g, '_')}_${artwork.seed || Date.now()}.jpg`;
+    link.download = `pixelstudio_${(artwork.style || 'artwork').toLowerCase().replace(/\s+/g, '_')}_${artwork.seed || Date.now()}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -73,12 +71,12 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
         <div className="relative lg:w-3/5 bg-slate-950 flex items-center justify-center p-4">
           <img
             src={artwork.imageUrl}
-            alt={`${artwork.species} artwork`}
+            alt={artwork.style || 'Generated artwork'}
             referrerPolicy="no-referrer"
             onError={(e) => {
               const target = e.currentTarget;
-              if (!target.src.includes('showcase_furry_fox.jpg')) {
-                target.src = './images/showcase_furry_fox.jpg';
+              if (!target.src.includes('showcase_portrait.jpg')) {
+                target.src = './images/showcase_portrait.jpg';
               }
             }}
             className="max-h-[60vh] lg:max-h-[82vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
@@ -109,15 +107,21 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
               </div>
 
               <h2 className="text-xl font-bold text-white mt-1.5 tracking-tight">
-                {artwork.species}
+                {artwork.style || 'Custom Artwork'}
               </h2>
 
               <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                <span>{artwork.style}</span>
+                <span>{artwork.category || 'Digital Art'}</span>
                 <span aria-hidden="true">·</span>
                 <span className="font-mono tabular-nums">{artwork.aspectRatio}</span>
                 <span aria-hidden="true">·</span>
                 <span className="font-mono tabular-nums">Seed: {artwork.seed}</span>
+                {artwork.isNsfw && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="text-amber-400 text-xs">NSFW</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -155,7 +159,7 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    <span>Download High-Res</span>
+                    <span>Download Image</span>
                   </>
                 )}
               </button>
@@ -195,7 +199,7 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 px-3 py-2 text-xs font-medium transition-colors border border-slate-800"
               >
                 <ExternalLink className="h-3.5 w-3.5 text-orange-400" />
-                <span>Perchance Bridge</span>
+                <span>Perchance Site</span>
               </button>
             </div>
           </div>
