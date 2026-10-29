@@ -96,8 +96,14 @@ export const OutputViewport: React.FC<OutputViewportProps> = ({
           <>
             <img
               src={currentArtwork.imageUrl}
-              alt={currentArtwork.prompt}
+              alt={`${currentArtwork.species} artwork`}
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.includes('showcase_furry_fox.jpg')) {
+                  target.src = './images/showcase_furry_fox.jpg';
+                }
+              }}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             />
 

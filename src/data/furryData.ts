@@ -229,7 +229,7 @@ export const PRESET_ARCHETYPES: PresetArchetype[] = [
     title: 'Unit-07 Cyber Vulpine',
     species: 'Arctic Fox',
     tagline: 'High-tech courier equipped with cyberware and neon street gear.',
-    previewImage: '/src/assets/images/showcase_furry_fox_1793246739716.jpg',
+    previewImage: './images/showcase_furry_fox.jpg',
     config: {
       species: 'Arctic Fox',
       category: 'Canines',
@@ -250,7 +250,7 @@ export const PRESET_ARCHETYPES: PresetArchetype[] = [
     title: 'Northern Thane Fenrir',
     species: 'Timber Wolf',
     tagline: 'Venerated warrior of the glacial pines clad in carved leather armor.',
-    previewImage: '/src/assets/images/showcase_furry_wolf_1793246739715.jpg',
+    previewImage: './images/showcase_furry_wolf.jpg',
     config: {
       species: 'Timber Wolf',
       category: 'Canines',
@@ -271,7 +271,7 @@ export const PRESET_ARCHETYPES: PresetArchetype[] = [
     title: 'Drift-9 Tactical Protogen',
     species: 'Protogen',
     tagline: 'Sleek synthetic operative navigating neon rain and digital alleyways.',
-    previewImage: '/src/assets/images/showcase_furry_protogen_1793246742126.jpg',
+    previewImage: './images/showcase_furry_protogen.jpg',
     config: {
       species: 'Protogen',
       category: 'Cybernetic',
@@ -292,7 +292,7 @@ export const PRESET_ARCHETYPES: PresetArchetype[] = [
     title: 'Grand Archivist Kaelen',
     species: 'Western Dragon',
     tagline: 'Ancient celestial scholar unravelling cosmic grimoires by candlelight.',
-    previewImage: '/src/assets/images/showcase_furry_dragon_1793246741810.jpg',
+    previewImage: './images/showcase_furry_dragon.jpg',
     config: {
       species: 'Western Dragon',
       category: 'Mythical',
@@ -313,7 +313,7 @@ export const PRESET_ARCHETYPES: PresetArchetype[] = [
 export const STARTER_GALLERY: GeneratedArtwork[] = [
   {
     id: 'artwork-1',
-    imageUrl: '/src/assets/images/showcase_furry_fox_1793246739716.jpg',
+    imageUrl: './images/showcase_furry_fox.jpg',
     prompt: 'Anthropomorphic arctic fox character with silver-white and cyan fur, expressive amber eyes, wearing a techwear hoodie, digital concept art, vibrant cel-shaded illustration, character portrait, detailed fur texture, soft rim lighting, clean studio background',
     negativePrompt: 'deformed anatomy, bad paws, blurry, poorly drawn hands, disfigured, mutated, low quality',
     species: 'Arctic Fox',
@@ -326,7 +326,7 @@ export const STARTER_GALLERY: GeneratedArtwork[] = [
   },
   {
     id: 'artwork-2',
-    imageUrl: '/src/assets/images/showcase_furry_wolf_1793246739715.jpg',
+    imageUrl: './images/showcase_furry_wolf.jpg',
     prompt: 'Anthropomorphic timber wolf warrior with slate grey fur, amber eyes, intricate fantasy leather shoulder pauldron, painterly digital art style, dignified heroic expression, dynamic atmospheric lighting, sharp details',
     negativePrompt: 'deformed, distorted, extra limbs, bad anatomy, artifacts, lowres',
     species: 'Timber Wolf',
@@ -339,7 +339,7 @@ export const STARTER_GALLERY: GeneratedArtwork[] = [
   },
   {
     id: 'artwork-3',
-    imageUrl: '/src/assets/images/showcase_furry_protogen_1793246742126.jpg',
+    imageUrl: './images/showcase_furry_protogen.jpg',
     prompt: 'Anthropomorphic protogen cyborg character with dark metallic visor displaying glowing cyan LED expression, fluffy black and turquoise fur, futuristic cyber armor, soft neon reflections, 3D digital render, sharp focus',
     negativePrompt: 'blurry, bad proportions, distorted visor, glitch, low quality',
     species: 'Protogen',
@@ -352,7 +352,7 @@ export const STARTER_GALLERY: GeneratedArtwork[] = [
   },
   {
     id: 'artwork-4',
-    imageUrl: '/src/assets/images/showcase_furry_dragon_1793246741810.jpg',
+    imageUrl: './images/showcase_furry_dragon.jpg',
     prompt: 'Anthropomorphic dragon scholar character with iridescent emerald and golden scales, horned crest, dressed in an ornate celestial robe, magical spark illumination, fantasy digital painting, high resolution character portrait',
     negativePrompt: 'bad anatomy, human hands, extra eyes, mutated scales, blurry',
     species: 'Western Dragon',

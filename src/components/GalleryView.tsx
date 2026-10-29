@@ -136,8 +136,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
               >
                 <img
                   src={item.imageUrl}
-                  alt={item.prompt}
+                  alt={`${item.species} artwork`}
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('showcase_furry_fox.jpg')) {
+                      target.src = './images/showcase_furry_fox.jpg';
+                    }
+                  }}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
 

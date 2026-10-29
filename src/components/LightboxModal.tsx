@@ -73,8 +73,14 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
         <div className="relative lg:w-3/5 bg-slate-950 flex items-center justify-center p-4">
           <img
             src={artwork.imageUrl}
-            alt={artwork.prompt}
+            alt={`${artwork.species} artwork`}
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('showcase_furry_fox.jpg')) {
+                target.src = './images/showcase_furry_fox.jpg';
+              }
+            }}
             className="max-h-[60vh] lg:max-h-[82vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
           />
         </div>

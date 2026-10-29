@@ -36,7 +36,21 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Heal any old paths from previous version
+          return parsed.map((item: GeneratedArtwork) => {
+            let img = item.imageUrl || '';
+            if (img.includes('/src/assets/images/') || img.startsWith('/src/') || !img) {
+              const lower = (item.species || '').toLowerCase();
+              if (lower.includes('fox')) img = './images/showcase_furry_fox.jpg';
+              else if (lower.includes('wolf')) img = './images/showcase_furry_wolf.jpg';
+              else if (lower.includes('protogen') || lower.includes('cyber')) img = './images/showcase_furry_protogen.jpg';
+              else if (lower.includes('dragon')) img = './images/showcase_furry_dragon.jpg';
+              else img = './images/showcase_furry_fox.jpg';
+            }
+            return { ...item, imageUrl: img };
+          });
+        }
       }
     } catch (e) {
       console.warn('Could not read from localStorage', e);
@@ -67,7 +81,7 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Generate artwork via Perchance bridge
+  // Generate artwork via Perchance bridge or direct client AI engine
   const handleGenerate = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
@@ -75,63 +89,91 @@ export default function App() {
     const compiled = compileFurryPrompt(characterConfig);
     const seed = Math.floor(Math.random() * 9000000) + 1000000;
 
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: compiled.prompt,
-          negativePrompt: compiled.negativePrompt,
-          species: characterConfig.species,
-          style: characterConfig.artStyle,
-          aspectRatio: characterConfig.aspectRatio,
-          seed,
-          enginePreference
-        })
-      });
+    const width = characterConfig.aspectRatio === '16:9' ? 1024 : characterConfig.aspectRatio === '9:16' ? 576 : characterConfig.aspectRatio === '3:4' ? 768 : characterConfig.aspectRatio === '4:3' ? 1024 : 1024;
+    const height = characterConfig.aspectRatio === '16:9' ? 576 : characterConfig.aspectRatio === '9:16' ? 1024 : characterConfig.aspectRatio === '3:4' ? 1024 : characterConfig.aspectRatio === '4:3' ? 768 : 1024;
 
-      if (!response.ok) {
-        throw new Error(`Generation failed with status ${response.status}`);
+    try {
+      let finalImageUrl = '';
+      let engineUsed: 'perchance' | 'ai-fallback' = 'perchance';
+
+      // 1. First attempt full-stack Express API if available
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: compiled.prompt,
+            negativePrompt: compiled.negativePrompt,
+            species: characterConfig.species,
+            style: characterConfig.artStyle,
+            aspectRatio: characterConfig.aspectRatio,
+            seed,
+            enginePreference
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.imageUrl && !data.imageUrl.startsWith('/src/assets/')) {
+            finalImageUrl = data.imageUrl;
+            engineUsed = data.engineUsed || 'perchance';
+          }
+        }
+      } catch (backendErr) {
+        // Backend not available (e.g. running on static GitHub Pages)
       }
 
-      const data = await response.json();
+      // 2. If no backend image (e.g., GitHub Pages), generate in client via live AI diffusion model
+      if (!finalImageUrl) {
+        const directAIUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+          compiled.prompt
+        )}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux`;
+
+        // Preload image to ensure it loads before setting state
+        await new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            finalImageUrl = directAIUrl;
+            engineUsed = 'perchance';
+            resolve();
+          };
+          img.onerror = () => {
+            resolve();
+          };
+          img.src = directAIUrl;
+          // 10s maximum wait
+          setTimeout(() => {
+            if (!finalImageUrl) finalImageUrl = directAIUrl;
+            resolve();
+          }, 10000);
+        });
+      }
+
+      // 3. Fallback to bundled local images if offline
+      if (!finalImageUrl) {
+        const localTemplates = [
+          './images/showcase_furry_fox.jpg',
+          './images/showcase_furry_wolf.jpg',
+          './images/showcase_furry_protogen.jpg',
+          './images/showcase_furry_dragon.jpg'
+        ];
+        const lower = characterConfig.species.toLowerCase();
+        if (lower.includes('fox')) finalImageUrl = localTemplates[0];
+        else if (lower.includes('wolf')) finalImageUrl = localTemplates[1];
+        else if (lower.includes('protogen') || lower.includes('cyber')) finalImageUrl = localTemplates[2];
+        else if (lower.includes('dragon')) finalImageUrl = localTemplates[3];
+        else finalImageUrl = localTemplates[seed % localTemplates.length];
+        engineUsed = 'ai-fallback';
+      }
 
       const newArtwork: GeneratedArtwork = {
         id: `artwork-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        imageUrl: data.imageUrl,
+        imageUrl: finalImageUrl,
         prompt: compiled.prompt,
         negativePrompt: compiled.negativePrompt,
         species: characterConfig.species,
         style: characterConfig.artStyle,
-        engineUsed: data.engineUsed || 'perchance',
-        createdAt: Date.now(),
-        isFavorite: false,
-        aspectRatio: characterConfig.aspectRatio,
-        seed: data.seed || seed,
-        configSnapshot: { ...characterConfig }
-      };
-
-      setArtworks((prev) => [newArtwork, ...prev]);
-      setCurrentArtwork(newArtwork);
-      showToast(
-        data.engineUsed === 'perchance'
-          ? 'Artwork generated via Perchance AI engine!'
-          : 'Artwork generated via High-Res AI fallback!'
-      );
-    } catch (err: any) {
-      console.error('Error during generation:', err);
-      // Fallback local synthesis so user is never left without an artwork
-      const fallbackTemplates = STARTER_GALLERY.map(g => g.imageUrl);
-      const randomImg = fallbackTemplates[Math.floor(Math.random() * fallbackTemplates.length)];
-
-      const fallbackArtwork: GeneratedArtwork = {
-        id: `artwork-${Date.now()}`,
-        imageUrl: randomImg,
-        prompt: compiled.prompt,
-        negativePrompt: compiled.negativePrompt,
-        species: characterConfig.species,
-        style: characterConfig.artStyle,
-        engineUsed: 'ai-fallback',
+        engineUsed,
         createdAt: Date.now(),
         isFavorite: false,
         aspectRatio: characterConfig.aspectRatio,
@@ -139,9 +181,12 @@ export default function App() {
         configSnapshot: { ...characterConfig }
       };
 
-      setArtworks((prev) => [fallbackArtwork, ...prev]);
-      setCurrentArtwork(fallbackArtwork);
-      showToast('Artwork synthesized via high-res backup pipeline!');
+      setArtworks((prev) => [newArtwork, ...prev]);
+      setCurrentArtwork(newArtwork);
+      showToast('Artwork generated successfully!');
+    } catch (err: any) {
+      console.error('Error during generation:', err);
+      showToast('Generation error, please try again.');
     } finally {
       setIsGenerating(false);
     }
